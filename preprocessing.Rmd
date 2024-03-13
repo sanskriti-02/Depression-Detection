@@ -1,0 +1,216 @@
+# Mental Health in Tech Space
+```{r}
+library(dplyr)
+library(magrittr)
+library(stringr)
+library(janitor)
+library(Hmisc)
+library(naniar)
+library(caTools)
+library(ggplot2)
+```
+## Importing the Dataset
+```{r}
+data <- read.csv("C:/Users/singh/Desktop/CSE3505 - Foundations of Data Analytics/Project/survey.csv")
+```
+```{r}
+# print(data)
+print(head(data))
+print(nrow(data))
+print(ncol(data))
+str(data)
+```
+## Data Cleaning
+```{r}
+data %<>% janitor::clean_names()
+colnames(data)
+```
+### NA values detection
+```{r}
+sapply(data, function(x) sum(is.na(x)))
+```
+### Dropping unnecessary columns
+```{r}
+table(data$country)
+unique(data$state)
+data <- data[ , !(names(data) %in% c("country","state","timestamp","comments"))]
+```
+```{r}
+describe(data)
+```
+### Gender unification
+```{r}
+data$gender %<>% str_to_lower()
+gender_str <- unique(data$gender)
+print(gender_str)
+
+female_str <- gender_str[c(1,7,8,11,16,23,26,36,41)]
+other_str <- gender_str[c(4,6,9,14,15,19,20,21,22,24,25,27,28,31,33,34,35,43)]
+male_str <- gender_str[c(2,3,5,10,12,13,17,29,30,32,37,39,42)]
+
+data$gender %<>% sapply(function(x) if(x %in% female_str) "female" else x)
+data$gender %<>% sapply(function(x) if(x %in% other_str) "other" else x)
+data$gender %<>% sapply(function(x) if(x %in% male_str) "male" else x)
+data %<>% filter(gender %in% c("female","other","male"))
+
+table(data$gender)
+```
+### Age categorization
+```{r}
+data$age %<>% sapply(function(x) if(x < 12) 15 else x)
+data$age %<>% sapply(function(x) if(x > 75) 75 else x)
+
+ggplot(data, aes(x = age)) + geom_histogram(bins = 30)
+
+str(data)
+```
+### Observing Missing Values
+```{r}
+naniar::vis_miss(data)
+```
+### Handling Missing Values
+```{r}
+mode <- function(x) {
+  unique_data <- unique(x)
+  map_data <- match(x, unique_data)
+  tabulate_data <- tabulate(map_data) 
+  max_val <- max(tabulate_data)
+  unique_data[tabulate_data == max_val]
+}
+
+# Self employed column contains as low as 2% null values , so it is okay to replace it with mode.
+se_mode <- mode(data[, 'self_employed'])
+data$self_employed[is.na(data$self_employed)] <- se_mode
+
+sum(is.na(data$self_employed))
+```
+```{r}
+# Work_interfere contains almost 20% null values which is significant as we have less data.Let us once see the null values to find any pattern.
+data %>% select(work_interfere, treatment) %>% filter(is.na(work_interfere)) %>% count(treatment)
+
+data$work_interfere[is.na(data$work_interfere)] <- 'Never'
+
+sum(is.na(data$work_interfere))
+```
+```{r}
+naniar::vis_miss(data)
+```
+## Splitting dataset into training and testing sets
+```{r}
+set.seed(1)
+split <- sample.split(data$age, SplitRatio = 0.85)
+train <- subset(data, split == TRUE)
+test <- subset(data, split == FALSE)
+dim(train)
+dim(test)
+```
+## Exploratory Data Analysis (EDA)
+```{r}
+health <- train
+colnames(health)
+```
+```{r}
+ggplot(health, aes(x = factor(treatment), fill = treatment)) + geom_bar(stat = 'count') + labs(x = 'treatment')
+```
+```{r}
+ggplot(health, aes(x = age, fill = treatment)) + geom_histogram(bins=30)
+```
+```{r}
+ggplot(health, aes(x = factor(self_employed), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'self_employed')
+```
+```{r}
+ggplot(health, aes(x = factor(work_interfere), fill = work_interfere)) + geom_bar(stat = 'count') + labs(x = 'work_interfere')
+```
+```{r}
+table(health$work_interfere)
+```
+```{r}
+ggplot(health, aes(x = factor(work_interfere), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'work_interfere')
+```
+```{r}
+ggplot(health, aes(x = factor(family_history), fill = family_history)) + geom_bar(stat = 'count') + labs(x = 'family_history')
+```
+```{r}
+ggplot(health, aes(x = factor(family_history), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'family_history')
+```
+```{r}
+ggplot(health, aes(x = factor(remote_work), fill = remote_work)) + geom_bar(stat = 'count') + labs(x = 'remote_work')
+```
+```{r}
+ggplot(health, aes(x = factor(remote_work), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'remote_work')
+```
+```{r}
+ggplot(health, aes(x = factor(benefits), fill = benefits)) + geom_bar(stat = 'count') + labs(x = 'benefits')
+```
+```{r}
+table(health$benefits)
+```
+```{r}
+ggplot(health, aes(x = factor(benefits), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'benefits')
+```
+```{r}
+ggplot(health, aes(x = factor(care_options), fill = care_options)) + geom_bar(stat = 'count') + labs(x = 'care_options')
+```
+```{r}
+table(health$care_options)
+```
+```{r}
+ggplot(health, aes(x = factor(care_options), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'care_options')
+```
+```{r}
+ggplot(health, aes(x = factor(no_employees), fill = no_employees)) + geom_bar(stat = 'count') + labs(x = 'no_employees')
+```
+```{r}
+ggplot(health, aes(x = factor(no_employees), fill = benefits)) + geom_bar(position="dodge", stat="count") + labs(x = 'no_employees')
+```
+```{r}
+ggplot(health, aes(x = factor(no_employees), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'no_employees')
+```
+```{r}
+ggplot(health, aes(x = factor(wellness_program), fill = wellness_program)) + geom_bar(stat = 'count') + labs(x = 'wellness_program')
+```
+```{r}
+ggplot(health, aes(x = factor(wellness_program), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'wellness_program')
+```
+```{r}
+ggplot(health, aes(x = factor(seek_help), fill = seek_help)) + geom_bar(stat = 'count') + labs(x = 'seek_help')
+```
+```{r}
+ggplot(health, aes(x = factor(seek_help), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'seek_help')
+```
+```{r}
+ggplot(health, aes(x = factor(anonymity), fill = anonymity)) + geom_bar(stat = 'count') + labs(x = 'anonymity')
+```
+```{r}
+ggplot(health, aes(x = factor(anonymity), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'anonymity')
+```
+```{r}
+ggplot(health, aes(x = factor(leave), fill = leave)) + geom_bar(stat = 'count') + labs(x = 'leave')
+```
+```{r}
+ggplot(health, aes(x = factor(leave), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'leave')
+```
+```{r}
+ggplot(health, aes(x = factor(mental_health_consequence), fill = mental_health_consequence)) + geom_bar(stat = 'count') + labs(x = 'mental_health_consequence')
+```
+```{r}
+ggplot(health, aes(x = factor(mental_health_consequence), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'mental_health_consequence')
+```
+```{r}
+ggplot(health, aes(x = factor(coworkers), fill = coworkers)) + geom_bar(stat = 'count') + labs(x = 'coworkers')
+```
+```{r}
+ggplot(health, aes(x = factor(coworkers), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'coworkers')
+```
+```{r}
+ggplot(health, aes(x = factor(mental_vs_physical), fill = mental_vs_physical)) + geom_bar(stat = 'count') + labs(x = 'mental_vs_physical')
+```
+```{r}
+ggplot(health, aes(x = factor(mental_vs_physical), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'mental_vs_physical')
+```
+```{r}
+ggplot(health, aes(x = factor(obs_consequence), fill = obs_consequence)) + geom_bar(stat = 'count') + labs(x = 'obs_consequence')
+```
+```{r}
+ggplot(health, aes(x = factor(obs_consequence), fill = treatment)) + geom_bar(position="dodge", stat="count") + labs(x = 'obs_consequence')
+```
