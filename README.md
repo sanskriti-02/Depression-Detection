@@ -1,1 +1,9 @@
-# Depression-Detection-System
+# Recursive Feature Selection-Based Ensemble Learning to Detect Depression
+
+Mental Health has become a large area of concern over the years. Many studies point to it being an essential component to not only the well-being of a person but also their productivity. Despite that, there is not a lot of knowledge as to what causes these disorders. Thus, the exploring of this data as well its modelling seeks to analyse which factors have the highest feature importance from a questionnaire.
+
+The aim of this study is to combine recursive feature elimination and meta-learning stacking classification to accurately classify whether a person with certain comments or answers in a mental health survey will exhibit symptoms of depression. For this purpose, Ensemble Methods will be used for the Meta-Learners. The reason for this is that only Ensemble models or those models based on Ensemble Models have a trait called Feature Importance which is why the Stacking Classifiers has its estimators as well as its learner as an ensemble model. Without this, the stacking function that is created will fail.
+
+The proposed Meta-Learning model were fitted on the mental health dataset and their performance far exceeded base models after pre-processing them via recursive feature elimination. While the range of the base but fine-tuned models of XGBoost, LightGBM, GradientBoost, ADABoost, ExtraTrees, Random Forest and Decision Tree Algorithms were around 81-86 in their F1 score for the training set, the Stacking Classifier outperformed them by around 9% as its accuracy came around 94.9% in the end. With this, we can conclude that our RFESC (Recursive Feature Eliminating Stacking Classifier) is very good for diagnostic analytics with several attributes that might lead to a single causation.
+
+***Presented at ICRDSTEM-2023 [IN PRESS]***
